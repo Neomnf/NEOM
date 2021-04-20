@@ -1,0 +1,92 @@
+#!/sbin/openrc-run
+
+# backward compatibility for existing gentoo layout 
+#
+if [ -d "/var/lib/neom/.neom" ]; then
+	NEOMD_DEFAULT_DATADIR="/var/lib/neom/.neom"
+else
+	NEOMD_DEFAULT_DATADIR="/var/lib/neomd"
+fi
+
+NEOMD_CONFIGFILE=${NEOMD_CONFIGFILE:-/etc/Neomnf/NEOM.conf}
+NEOMD_PIDDIR=${NEOMD_PIDDIR:-/var/run/neomd}
+NEOMD_PIDFILE=${NEOMD_PIDFILE:-${NEOMD_PIDDIR}/neomd.pid}
+NEOMD_DATADIR=${NEOMD_DATADIR:-${NEOMD_DEFAULT_DATADIR}}
+NEOMD_USER=${NEOMD_USER:-${NEOM_USER:-neom}}
+NEOMD_GROUP=${NEOMD_GROUP:-neom}
+NEOMD_BIN=${NEOMD_BIN:-/usr/bin/neomd}
+NEOMD_NICE=${NEOMD_NICE:-${NICELEVEL:-0}}
+NEOMD_OPTS="${NEOMD_OPTS:-${NEOM_OPTS}}"
+
+name="NEOM Core Daemon"
+description="NEOM cryptocurrency P2P network daemon"
+
+command="/usr/bin/neomd"
+command_args="-pid=\"${NEOMD_PIDFILE}\" \
+		-conf=\"${NEOMD_CONFIGFILE}\" \
+		-datadir=\"${NEOMD_DATADIR}\" \
+		-daemon \
+		${NEOMD_OPTS}"
+
+required_files="${NEOMD_CONFIGFILE}"
+start_stop_daemon_args="-u ${NEOMD_USER} \
+			-N ${NEOMD_NICE} -w 2000"
+pidfile="${NEOMD_PIDFILE}"
+
+# The retry schedule to use when stopping the daemon. Could be either
+# a timeout in seconds or multiple signal/timeout pairs (like
+# "SIGKILL/180 SIGTERM/300")
+retry="${NEOMD_SIGTERM_TIMEOUT}"
+
+depend() {
+	need localmount net
+}
+
+# verify
+# 1) that the datadir exists and is writable (or create it)
+# 2) that a directory for the pid exists and is writable
+# 3) ownership and permissions on the config file
+start_pre() {
+	checkpath \
+	-d \
+	--mode 0750 \
+	--owner "${NEOMD_USER}:${NEOMD_GROUP}" \
+	"${NEOMD_DATADIR}"
+
+	checkpath \
+	-d \
+	--mode 0755 \
+	--owner "${NEOMD_USER}:${NEOMD_GROUP}" \
+	"${NEOMD_PIDDIR}"
+
+	checkpath -f \
+	-o ${NEOMD_USER}:${NEOMD_GROUP} \
+	-m 0660 \
+	${NEOMD_CONFIGFILE}
+
+	checkconfig || return 1
+}
+
+checkconfig()
+{
+	if ! grep -qs '^rpcpassword=' "${NEOMD_CONFIGFILE}" ; then
+		eerror ""
+		eerror "ERROR: You must set a secure rpcpassword to run neomd."
+		eerror "The setting must appear in ${NEOMD_CONFIGFILE}"
+		eerror ""
+		eerror "This password is security critical to securing wallets "
+		eerror "and must not be the same as the rpcuser setting."
+		eerror "You can generate a suitable random password using the following "
+		eerror "command from the shell:"
+		eerror ""
+		eerror "bash -c 'tr -dc a-zA-Z0-9 < /dev/urandom | head -c32 && echo'"
+		eerror ""
+		eerror "It is recommended that you also set alertnotify so you are "
+		eerror "notified of problems:"
+		eerror ""
+		eerror "ie: alertnotify=echo %%s | mail -s \"NEOM Alert\"" \
+			"admin@foo.com"
+		eerror ""
+		return 1
+	fi
+}

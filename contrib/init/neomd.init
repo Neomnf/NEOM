@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+#
+#  neomd The neom core server.
+#
+#
+# chkconfig: 345 80 20
+# description: neomd
+# processname: neomd
+#
+
+# Source function library.
+. /etc/init.d/functions
+
+# you can override defaults in /etc/sysconfig/neomd, see below
+if [ -f /etc/sysconfig/neomd ]; then
+        . /etc/sysconfig/neomd
+fi
+
+RETVAL=0
+
+prog=neomd
+# you can override the lockfile via NEOMD_LOCKFILE in /etc/sysconfig/neomd
+lockfile=${NEOMD_LOCKFILE-/var/lock/subsys/neomd}
+
+# neomd defaults to /usr/bin/neomd, override with NEOMD_BIN
+neomd=${NEOMD_BIN-/usr/bin/neomd}
+
+# neomd opts default to -disablewallet, override with NEOMD_OPTS
+neomd_opts=${NEOMD_OPTS--disablewallet}
+
+start() {
+    echo -n $"Starting $prog: "
+    daemon $DAEMONOPTS $neomd $neomd_opts
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && touch $lockfile
+    return $RETVAL
+}
+
+stop() {
+    echo -n $"Stopping $prog: "
+    killproc $prog
+    RETVAL=$?
+    echo
+    [ $RETVAL -eq 0 ] && rm -f $lockfile
+    return $RETVAL
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status $prog
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage: service $prog {start|stop|status|restart}"
+        exit 1
+        ;;
+esac

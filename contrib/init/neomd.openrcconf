@@ -1,0 +1,33 @@
+# /etc/conf.d/neomd: config file for /etc/init.d/neomd
+
+# Config file location
+#NEOMD_CONFIGFILE="/etc/Neomnf/NEOM.conf"
+
+# What directory to write pidfile to?  (created and owned by $NEOMD_USER)
+#NEOMD_PIDDIR="/var/run/neomd"
+
+# What filename to give the pidfile
+#NEOMD_PIDFILE="${NEOMD_PIDDIR}/neomd.pid"
+
+# Where to write neomd data (be mindful that the blockchain is large)
+#NEOMD_DATADIR="/var/lib/neomd"
+
+# User and group to own neomd process
+#NEOMD_USER="neom"
+#NEOMD_GROUP="neom"
+
+# Path to neomd executable
+#NEOMD_BIN="/usr/bin/neomd"
+
+# Nice value to run neomd under
+#NEOMD_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+#NEOMD_OPTS=""
+
+# The timeout in seconds OpenRC will wait for neomd to terminate
+# after a SIGTERM has been raised.
+# Note that this will be mapped as argument to start-stop-daemon's
+# '--retry' option, which means you can specify a retry schedule
+# here. For more information see man 8 start-stop-daemon.
+NEOMD_SIGTERM_TIMEOUT=60
